@@ -1,0 +1,13 @@
+# Example application.properties (do NOT commit secrets)
+spring.application.name=GWConnector
+# For PaaS like Render, PORT is provided via environment variable. Override locally if needed.
+server.port=8081
+
+# Guidewire endpoints (replace with real values or set as environment variables)
+policy-api.url=https://pc-dev-gwcpdev.example/rest/policy/v1/search/policies
+policy-api.username=your_policy_api_username
+policy-api.password=your_policy_api_password
+claim-api.url=https://cc-dev-gwcpdev.example
+admin-api.url=https://cc-dev-gwcpdev.example
+
+# Optional: any other properties you need (logging, timeouts, etc.)
