@@ -1,0 +1,41 @@
+package com.vm.GWConnector.controller;
+
+import com.vm.GWConnector.model.GWClaimAdjustorResponse;
+import com.vm.GWConnector.service.ClaimAdjustorService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@Slf4j
+@RestController
+@RequestMapping("/api/claim-adjustors")
+@RequiredArgsConstructor
+public class ClaimAdjustorController {
+
+    private final ClaimAdjustorService claimAdjustorService;
+
+    @GetMapping("/groups")
+    public ResponseEntity<GWClaimAdjustorResponse> getClaimAdjustors(
+            @RequestParam(name = "pageSize", defaultValue = "100") int pageSize) {
+
+        log.info("Received request to fetch claim adjustors with pageSize={}", pageSize);
+        GWClaimAdjustorResponse response = claimAdjustorService.getClaimAdjustors(pageSize);
+        log.info("Returning claim adjustors response with dataCount={}", response != null && response.getData() != null ? response.getData().size() : 0);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{groupId}")
+    public ResponseEntity<com.vm.GWConnector.model.GWClaimAdjustorSingleResponse> getClaimAdjustorById(
+            @org.springframework.web.bind.annotation.PathVariable String groupId) {
+
+        log.info("Received request to fetch claim adjustor by id={}", groupId);
+        com.vm.GWConnector.model.GWClaimAdjustorSingleResponse resp = claimAdjustorService.getClaimAdjustorById(groupId);
+        return ResponseEntity.ok(resp);
+    }
+}

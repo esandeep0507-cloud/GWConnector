@@ -1,0 +1,12 @@
+package com.vm.GWConnector.model;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Data;
+
+@Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class GWCodeName {
+
+    private String code;
+    private String name;
+}
