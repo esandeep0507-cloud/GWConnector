@@ -81,4 +81,30 @@ public class ClaimAdjustorServiceImpl implements ClaimAdjustorService {
             throw new ClaimServiceException("Failed to fetch claim adjustor from GW", e);
         }
     }
+
+    @Override
+    public com.vm.GWConnector.model.GWClaimAdjustorUsersResponse getClaimAdjustorUsers(String groupId, int pageSize) {
+        String url = String.format("%s/rest/admin/v1/groups/%s/users?pageSize=%d", adminApiUrl, groupId, pageSize);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBasicAuth(username, password);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        try {
+            log.info("Calling GW claim adjustor users API: url={}", url);
+            ResponseEntity<com.vm.GWConnector.model.GWClaimAdjustorUsersResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    com.vm.GWConnector.model.GWClaimAdjustorUsersResponse.class);
+            log.info("Received claim adjustor users response: status={} count={}", response.getStatusCode(), response.getBody() != null ? response.getBody().getCount() : null);
+            return response.getBody();
+        } catch (RestClientException e) {
+            log.error("Error fetching claim adjustor users from GW for groupId={}", groupId, e);
+            throw new ClaimServiceException("Failed to fetch claim adjustor users from GW", e);
+        }
+    }
 }
+

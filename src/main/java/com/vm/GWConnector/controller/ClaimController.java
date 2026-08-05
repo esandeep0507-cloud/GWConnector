@@ -7,6 +7,7 @@ import com.vm.GWConnector.model.ClaimResponseDTO;
 import com.vm.GWConnector.model.CreateClaimRequest;
 import com.vm.GWConnector.model.CreateClaimResponse;
 import com.vm.GWConnector.service.ClaimService;
+import com.vm.GWConnector.model.GWClaimActivityAssigneesResponse;
 import com.vm.GWConnector.model.GWClaimResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -65,5 +66,15 @@ public class ClaimController {
         CreateClaimResponse response = claimService.createClaim(request);
         log.info("Returning created claim response: {}", response);
         return ResponseEntity.status(201).body(response);
+    }
+
+    @GetMapping("/{claimId}/assign")
+    public ResponseEntity<GWClaimActivityAssigneesResponse> getClaimActivityAssignees(
+            @PathVariable String claimId) {
+
+        log.info("Received request to fetch claim activity assignees: {}", claimId);
+        GWClaimActivityAssigneesResponse response = claimService.getClaimActivityAssignees(claimId);
+        log.info("Returning claim activity assignees for claimId={}", claimId);
+        return ResponseEntity.ok(response);
     }
 }

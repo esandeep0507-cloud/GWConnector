@@ -1,6 +1,7 @@
 package com.vm.GWConnector.service;
 
 import com.vm.GWConnector.mapper.ClaimMapper;
+import com.vm.GWConnector.mapper.ClaimActivityAssigneesMapper;
 import com.vm.GWConnector.model.*;
 import com.vm.GWConnector.exception.ClaimServiceException;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.List;
 public class ClaimServiceImpl implements ClaimService {
 
     private final RestTemplate restTemplate;
+    private final ClaimActivityAssigneesMapper claimActivityAssigneesMapper;
 
     @Value("${claim-api.url}")
     private String baseUrl;
@@ -92,6 +94,34 @@ public class ClaimServiceImpl implements ClaimService {
         } catch (RestClientException e) {
             log.error("Error fetching claims by policy number from GW: policyNumber={}", policyNumber, e);
             throw new ClaimServiceException("Failed to fetch claims by policy number from GW", e);
+        }
+    }
+
+    @Override
+    public GWClaimActivityAssigneesResponse getClaimActivityAssignees(String claimId) {
+        String url = String.format("%s/rest/claim/v1/claims/%s/activity-assignees", baseUrl, claimId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBasicAuth(username, password);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        try {
+            log.info("Fetching claim activity assignees from GW: claimId={}", claimId);
+            ResponseEntity<GWClaimActivityAssigneesResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    GWClaimActivityAssigneesResponse.class);
+            log.info("Received claim activity assignees response: claimId={} status={} bodyPresent={}",
+                    claimId,
+                    response.getStatusCode(),
+                    response.getBody() != null);
+            return claimActivityAssigneesMapper.mapToResponse(response.getBody());
+        } catch (RestClientException e) {
+            log.error("Error fetching claim activity assignees from GW: claimId={}", claimId, e);
+            throw new ClaimServiceException("Failed to fetch claim activity assignees from GW", e);
         }
     }
 
