@@ -5,6 +5,8 @@ import com.vm.GWConnector.model.GWClaimAdjustorUsersResponse;
 import com.vm.GWConnector.service.ClaimAdjustorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,11 +20,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/claim-adjustors")
 @RequiredArgsConstructor
+@Tag(name = "Claim adjustors", description = "Guidewire ClaimCenter group and user operations")
 public class ClaimAdjustorController {
 
     private final ClaimAdjustorService claimAdjustorService;
 
     @GetMapping("/groups")
+    @Operation(summary = "List claim-adjustor groups")
     public ResponseEntity<GWClaimAdjustorResponse> getClaimAdjustors(
             @RequestParam(name = "pageSize", defaultValue = "100") int pageSize) {
 
@@ -33,6 +37,7 @@ public class ClaimAdjustorController {
     }
 
     @GetMapping("/groups/{groupId}/users")
+    @Operation(summary = "List users in a claim-adjustor group")
     public ResponseEntity<GWClaimAdjustorUsersResponse> getClaimAdjustorUsers(
             @PathVariable String groupId,
             @RequestParam(name = "pageSize", defaultValue = "100") int pageSize) {
@@ -44,6 +49,7 @@ public class ClaimAdjustorController {
     }
 
     @GetMapping("/{groupId}")
+    @Operation(summary = "Get a claim-adjustor group")
     public ResponseEntity<com.vm.GWConnector.model.GWClaimAdjustorSingleResponse> getClaimAdjustorById(
             @org.springframework.web.bind.annotation.PathVariable String groupId) {
 
