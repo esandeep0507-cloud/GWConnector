@@ -2,6 +2,10 @@ package com.vm.GWConnector.service;
 
 import com.vm.GWConnector.mapper.ClaimMapper;
 import com.vm.GWConnector.mapper.ClaimActivityAssigneesMapper;
+import com.vm.GWConnector.mapper.ClaimAssignmentMapper;
+import com.vm.GWConnector.mapper.DraftClaimMapper;
+import com.vm.GWConnector.mapper.ClaimSubmissionMapper;
+import com.vm.GWConnector.mapper.PolicyMapper;
 import com.vm.GWConnector.model.*;
 import com.vm.GWConnector.exception.ClaimServiceException;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
@@ -22,6 +27,11 @@ public class ClaimServiceImpl implements ClaimService {
 
     private final RestTemplate restTemplate;
     private final ClaimActivityAssigneesMapper claimActivityAssigneesMapper;
+    private final ClaimAssignmentMapper claimAssignmentMapper;
+    private final DraftClaimMapper draftClaimMapper;
+    private final PolicyService policyService;
+    private final PolicyMapper policyMapper;
+    private final ClaimSubmissionMapper claimSubmissionMapper;
 
     @Value("${claim-api.url}")
     private String baseUrl;
@@ -123,6 +133,112 @@ public class ClaimServiceImpl implements ClaimService {
             log.error("Error fetching claim activity assignees from GW: claimId={}", claimId, e);
             throw new ClaimServiceException("Failed to fetch claim activity assignees from GW", e);
         }
+    }
+
+    @Override
+    public ClaimAssignmentResponseDTO assignClaim(ClaimAssignmentRequestDTO request) {
+        String claimId = request.getClaimId();
+        String url = String.format("%s/rest/claim/v1/claims/%s/assign", baseUrl, claimId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBasicAuth(username, password);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        GWClaimAssignmentRequest gwRequest = claimAssignmentMapper.mapToGWRequest(request);
+
+        try {
+            log.info("Assigning Guidewire claim: claimId={}", claimId);
+            ResponseEntity<Void> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    new HttpEntity<>(gwRequest, headers),
+                    Void.class);
+            log.info("Assigned Guidewire claim: claimId={} status={}", claimId, response.getStatusCode());
+            return claimAssignmentMapper.mapToResponse(request, response.getStatusCode());
+        } catch (RestClientException e) {
+            log.error("Error assigning Guidewire claim: claimId={}", claimId, e);
+            throw new ClaimServiceException("Failed to assign claim in GW", e);
+        }
+    }
+
+    @Override
+    public DraftClaimResponseDTO createDraftClaim(DraftClaimRequestDTO request) {
+        if (request.hasClaimReference()) {
+            return getExistingClaim(request);
+        }
+
+        PolicyResponse policy = resolvePolicy(request);
+        GWDraftClaimRequest gwRequest = draftClaimMapper.mapToGWRequest(request, policy);
+        String url = baseUrl + "/rest/claim/v1/claims";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBasicAuth(username, password);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        try {
+            log.info("Creating draft claim in Guidewire: policyNumber={}", request.getPolicyNumber());
+            ResponseEntity<GWDraftClaimResponse> response = restTemplate.exchange(
+                    url, HttpMethod.POST, new HttpEntity<>(gwRequest, headers), GWDraftClaimResponse.class);
+            DraftClaimResponseDTO result = draftClaimMapper.mapToResponse(response.getBody());
+            if (result == null) {
+                throw new ClaimServiceException("Guidewire returned an empty draft-claim response");
+            }
+            log.info("Created draft claim: claimId={} claimNumber={}", result.getClaimId(), result.getClaimNumber());
+            return result;
+        } catch (RestClientException e) {
+            log.error("Error creating draft claim in Guidewire: policyNumber={}", request.getPolicyNumber(), e);
+            throw new ClaimServiceException("Failed to create draft claim in GW", e);
+        }
+    }
+
+    @Override
+    public ClaimSubmissionResponseDTO submitClaim(ClaimSubmissionRequestDTO request) {
+        String url = String.format("%s/rest/claim/v1/claims/%s/submit", baseUrl, request.getClaimId());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBasicAuth(username, password);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        // Guidewire requires this header even when the submit action has no request body.
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        try {
+            log.info("Submitting Guidewire claim: claimId={}", request.getClaimId());
+            ResponseEntity<Void> response = restTemplate.exchange(
+                    url, HttpMethod.POST, new HttpEntity<Void>(null, headers), Void.class);
+            log.info("Submitted Guidewire claim: claimId={} status={}", request.getClaimId(), response.getStatusCode());
+            return claimSubmissionMapper.mapToResponse(request, response.getStatusCode());
+        } catch (HttpClientErrorException e) {
+            log.error("Guidewire rejected claim submission: claimId={} status={} response={}",
+                    request.getClaimId(), e.getStatusCode(), e.getResponseBodyAsString(), e);
+            throw new ClaimServiceException("Only draft claims can be submitted", e);
+        } catch (RestClientException e) {
+            log.error("Error submitting Guidewire claim: claimId={}", request.getClaimId(), e);
+            throw new ClaimServiceException("Failed to submit claim in GW", e);
+        }
+    }
+
+    private PolicyResponse resolvePolicy(DraftClaimRequestDTO request) {
+        log.info("Looking up policy before draft-claim creation: policyNumber={}", request.getPolicyNumber());
+        PolicyResponse policy = policyMapper.mapToPolicyResponse(
+                policyService.searchPolicies(policyService.buildRequest(request.getPolicyNumber())));
+        if (policy == null) {
+            throw new ClaimServiceException("No policy found for policy number " + request.getPolicyNumber());
+        }
+        return policy;
+    }
+
+    private DraftClaimResponseDTO getExistingClaim(DraftClaimRequestDTO request) {
+        log.info("Fetching existing claim: claimNumber={} policyNumber={}", request.getClaimNumber(), request.getPolicyNumber());
+        GWClaimResponse claim = getClaim(request.getClaimNumber());
+        if (claim == null) {
+            throw new ClaimServiceException("No claim found for claim number " + request.getClaimNumber());
+        }
+        if (claim.getPolicyNumber() != null && !claim.getPolicyNumber().equals(request.getPolicyNumber())) {
+            throw new ClaimServiceException("Claim number does not belong to the supplied policy number");
+        }
+        return draftClaimMapper.mapToResponse(claim);
     }
 
     @Override

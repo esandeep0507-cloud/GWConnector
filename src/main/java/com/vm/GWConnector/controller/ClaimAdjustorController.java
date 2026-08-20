@@ -36,7 +36,8 @@ public class ClaimAdjustorController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/groups/{groupId}/users")
+    // Keep the original /groups/... path available while accepting the path used by clients.
+    @GetMapping({"/{groupId}/users", "/groups/{groupId}/users"})
     @Operation(summary = "List users in a claim-adjustor group")
     public ResponseEntity<GWClaimAdjustorUsersResponse> getClaimAdjustorUsers(
             @PathVariable String groupId,

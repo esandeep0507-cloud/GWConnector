@@ -2,10 +2,16 @@ package com.vm.GWConnector.controller;
 
 import com.vm.GWConnector.mapper.ClaimMapper;
 import com.vm.GWConnector.model.ClaimDetailsByPolicyNumber;
+import com.vm.GWConnector.model.ClaimAssignmentRequestDTO;
+import com.vm.GWConnector.model.ClaimAssignmentResponseDTO;
 import com.vm.GWConnector.model.ClaimResponse;
 import com.vm.GWConnector.model.ClaimResponseDTO;
 import com.vm.GWConnector.model.CreateClaimRequest;
 import com.vm.GWConnector.model.CreateClaimResponse;
+import com.vm.GWConnector.model.DraftClaimRequestDTO;
+import com.vm.GWConnector.model.DraftClaimResponseDTO;
+import com.vm.GWConnector.model.ClaimSubmissionRequestDTO;
+import com.vm.GWConnector.model.ClaimSubmissionResponseDTO;
 import com.vm.GWConnector.service.ClaimService;
 import com.vm.GWConnector.model.GWClaimActivityAssigneesResponse;
 import com.vm.GWConnector.model.GWClaimResponse;
@@ -83,5 +89,33 @@ public class ClaimController {
         GWClaimActivityAssigneesResponse response = claimService.getClaimActivityAssignees(claimId);
         log.info("Returning claim activity assignees for claimId={}", claimId);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/assign")
+    @Operation(summary = "Assign a claim", description = "Assigns a Guidewire claim to the specified group and user.")
+    public ResponseEntity<ClaimAssignmentResponseDTO> assignClaim(
+            @Valid @RequestBody ClaimAssignmentRequestDTO request) {
+
+        log.info("Received request to assign claim: claimId={}", request.getClaimId());
+        ClaimAssignmentResponseDTO response = claimService.assignClaim(request);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PostMapping("/submit")
+    @Operation(summary = "Submit a claim", description = "Submits a Guidewire claim using its claim ID.")
+    public ResponseEntity<ClaimSubmissionResponseDTO> submitClaim(
+            @Valid @RequestBody ClaimSubmissionRequestDTO request) {
+
+        ClaimSubmissionResponseDTO response = claimService.submitClaim(request);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PostMapping("/draft")
+    @Operation(summary = "Create or retrieve a draft claim", description = "Retrieves an existing claim when claimNumber is provided; otherwise creates a draft claim after policy enrichment.")
+    public ResponseEntity<DraftClaimResponseDTO> createDraftClaim(
+            @Valid @RequestBody DraftClaimRequestDTO request) {
+
+        DraftClaimResponseDTO response = claimService.createDraftClaim(request);
+        return ResponseEntity.status(request.hasClaimReference() ? 200 : 201).body(response);
     }
 }
