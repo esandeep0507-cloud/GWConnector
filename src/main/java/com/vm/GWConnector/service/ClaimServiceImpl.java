@@ -205,10 +205,11 @@ public class ClaimServiceImpl implements ClaimService {
 
         try {
             log.info("Submitting Guidewire claim: claimId={}", request.getClaimId());
-            ResponseEntity<Void> response = restTemplate.exchange(
-                    url, HttpMethod.POST, new HttpEntity<Void>(null, headers), Void.class);
-            log.info("Submitted Guidewire claim: claimId={} status={}", request.getClaimId(), response.getStatusCode());
-            return claimSubmissionMapper.mapToResponse(request, response.getStatusCode());
+            ResponseEntity<GWClaimSubmitResponse> response = restTemplate.exchange(
+                    url, HttpMethod.POST, new HttpEntity<Void>(null, headers), GWClaimSubmitResponse.class);
+            log.info("Submitted Guidewire claim: claimId={} status={} body={}",
+                    request.getClaimId(), response.getStatusCode(), response.getBody());
+            return claimSubmissionMapper.mapToResponse(request, response.getBody(), response.getStatusCode());
         } catch (HttpClientErrorException e) {
             log.error("Guidewire rejected claim submission: claimId={} status={} response={}",
                     request.getClaimId(), e.getStatusCode(), e.getResponseBodyAsString(), e);

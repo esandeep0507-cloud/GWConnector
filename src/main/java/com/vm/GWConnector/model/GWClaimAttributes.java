@@ -1,13 +1,17 @@
 package com.vm.GWConnector.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.List;
 
+/**
+ * Maps everything under "data.attributes" in the GW claim submit response.
+ * "claim_number" / "policy_number" are duplicates of claimNumber/policyNumber
+ * and are intentionally not mapped separately.
+ */
 @Data
-public class ClaimSubmissionResponseDTO {
-
-    private int status;
+public class GWClaimAttributes {
 
     private String adjuster;
     private List<GWCodeName> allValidationLevelsReached;
@@ -16,12 +20,15 @@ public class ClaimSubmissionResponseDTO {
     private GWRef assignedUser;
     private GWCodeName assignmentStatus;
     private List<GWHistoryEvent> claimHistory;
-    private String claimId;
     private String claimNumber;
+
+    @JsonProperty("claim_status")
     private String claimStatus;
+
     private String description;
     private GWCodeName faultRating;
     private GWCodeName flagged;
+    private String id;
     private GWRef insured;
     private GWCodeName lobCode;
     private GWCodeName lossCause;
