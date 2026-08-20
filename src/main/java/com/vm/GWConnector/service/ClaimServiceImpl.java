@@ -75,6 +75,52 @@ public class ClaimServiceImpl implements ClaimService {
         }
     }
 
+    @Override
+    public GWClaimResponse getClaimById(String claimId) {
+        String url = baseUrl + "/rest/claim/v1/claims/" + claimId;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBasicAuth(username, password);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+        try {
+            log.info("Fetching claim from GW: claimId={}", claimId);
+            ResponseEntity<GWClaimSubmitResponse> response = restTemplate.exchange(
+                    url, HttpMethod.GET, new HttpEntity<Void>(headers), GWClaimSubmitResponse.class);
+            GWClaimAttributes attributes = response.getBody() != null && response.getBody().getData() != null
+                    ? response.getBody().getData().getAttributes() : null;
+            log.info("Received claim response: claimId={} status={} attributesPresent={}",
+                    claimId, response.getStatusCode(), attributes != null);
+            return mapToClaimResponse(attributes);
+        } catch (RestClientException e) {
+            log.error("Error fetching claim from GW: claimId={}", claimId, e);
+            throw new ClaimServiceException("Failed to fetch claim from GW", e);
+        }
+    }
+
+    private GWClaimResponse mapToClaimResponse(GWClaimAttributes attributes) {
+        if (attributes == null) {
+            return null;
+        }
+
+        GWClaimResponse response = new GWClaimResponse();
+        response.setAssignedGroup(attributes.getAssignedGroup());
+        response.setAssignmentStatus(attributes.getAssignmentStatus());
+        response.setClaimNumber(attributes.getClaimNumber());
+        response.setDescription(attributes.getDescription());
+        response.setFlagged(attributes.getFlagged());
+        response.setId(attributes.getId());
+        response.setLobCode(attributes.getLobCode());
+        response.setLossCause(attributes.getLossCause());
+        response.setLossDate(attributes.getLossDate());
+        response.setLossLocation(attributes.getLossLocation());
+        response.setLossType(attributes.getLossType());
+        response.setPolicyNumber(attributes.getPolicyNumber());
+        response.setReportedDate(attributes.getReportedDate());
+        response.setState(attributes.getState());
+        return response;
+    }
+
     public List<ClaimResponseDTO> getClaimsByPolicyNumber(String policyNumber) {
 
         String url = String.format(

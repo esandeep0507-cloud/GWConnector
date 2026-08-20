@@ -1,7 +1,7 @@
 package com.vm.GWConnector.controller;
 
 import com.vm.GWConnector.model.ClaimResponse;
-import com.vm.GWConnector.model.FnolProcessRequest;
+import com.vm.GWConnector.model.DraftClaimRequestDTO;
 import com.vm.GWConnector.service.FnolProcessService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +24,8 @@ public class FnolProcessController {
     private final FnolProcessService fnolProcessService;
 
     @PostMapping("/process")
-    @Operation(summary = "Process an FNOL", description = "Returns an existing claim when supplied, or creates a claim from policy information.")
-    public ResponseEntity<ClaimResponse> processFnol(@Valid @RequestBody FnolProcessRequest request) {
+    @Operation(summary = "Process an FNOL", description = "Creates a draft claim, submits it, selects an adjustor from the assigned group, and assigns the claim.")
+    public ResponseEntity<ClaimResponse> processFnol(@Valid @RequestBody DraftClaimRequestDTO request) {
         log.info("Received FNOL process request for policy={} claim={}", request.getPolicyNumber(), request.getClaimNumber());
         ClaimResponse response = fnolProcessService.processFnol(request);
         return ResponseEntity.ok(response);

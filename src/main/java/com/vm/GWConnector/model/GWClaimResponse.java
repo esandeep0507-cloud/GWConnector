@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class GWClaimResponse {
 
+    private GWRef assignedGroup;
     private GWCodeName assignmentStatus;
     private String claimNumber;
     private String description;
