@@ -77,6 +77,14 @@ public class ClaimServiceImpl implements ClaimService {
 
     @Override
     public GWClaimResponse getClaimById(String claimId) {
+        GWClaimSubmitResponse claimDetails = getClaimDetailsById(claimId);
+        GWClaimAttributes attributes = claimDetails != null && claimDetails.getData() != null
+                ? claimDetails.getData().getAttributes() : null;
+        return mapToClaimResponse(attributes);
+    }
+
+    @Override
+    public GWClaimSubmitResponse getClaimDetailsById(String claimId) {
         String url = baseUrl + "/rest/claim/v1/claims/" + claimId;
 
         HttpHeaders headers = new HttpHeaders();
@@ -87,11 +95,9 @@ public class ClaimServiceImpl implements ClaimService {
             log.info("Fetching claim from GW: claimId={}", claimId);
             ResponseEntity<GWClaimSubmitResponse> response = restTemplate.exchange(
                     url, HttpMethod.GET, new HttpEntity<Void>(headers), GWClaimSubmitResponse.class);
-            GWClaimAttributes attributes = response.getBody() != null && response.getBody().getData() != null
-                    ? response.getBody().getData().getAttributes() : null;
-            log.info("Received claim response: claimId={} status={} attributesPresent={}",
-                    claimId, response.getStatusCode(), attributes != null);
-            return mapToClaimResponse(attributes);
+            log.info("Received claim response: claimId={} status={} bodyPresent={}",
+                    claimId, response.getStatusCode(), response.getBody() != null);
+            return response.getBody();
         } catch (RestClientException e) {
             log.error("Error fetching claim from GW: claimId={}", claimId, e);
             throw new ClaimServiceException("Failed to fetch claim from GW", e);

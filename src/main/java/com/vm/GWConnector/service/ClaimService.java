@@ -13,6 +13,7 @@ import com.vm.GWConnector.model.ClaimSubmissionRequestDTO;
 import com.vm.GWConnector.model.ClaimSubmissionResponseDTO;
 import com.vm.GWConnector.model.GWClaimActivityAssigneesResponse;
 import com.vm.GWConnector.model.GWClaimResponse;
+import com.vm.GWConnector.model.GWClaimSubmitResponse;
 
 import java.util.List;
 
@@ -21,6 +22,8 @@ public interface ClaimService {
     GWClaimResponse getClaim(String claimNumber);
 
     GWClaimResponse getClaimById(String claimId);
+
+    GWClaimSubmitResponse getClaimDetailsById(String claimId);
 
     List<ClaimResponseDTO> getClaimsByPolicyNumber(String policyNumber);
 

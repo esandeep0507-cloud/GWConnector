@@ -1,7 +1,6 @@
 package com.vm.GWConnector.service;
 
 import com.vm.GWConnector.exception.ClaimServiceException;
-import com.vm.GWConnector.mapper.ClaimMapper;
 import com.vm.GWConnector.model.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,10 +15,9 @@ public class FnolProcessServiceImpl implements FnolProcessService {
 
     private final ClaimService claimService;
     private final ClaimAdjustorService claimAdjustorService;
-    private final ClaimMapper claimMapper;
 
     @Override
-    public ClaimResponse processFnol(DraftClaimRequestDTO request) {
+    public GWClaimSubmitResponse processFnol(DraftClaimRequestDTO request) {
         log.info("Processing FNOL for policy={} claim={}", request.getPolicyNumber(), request.getClaimNumber());
 
         DraftClaimResponseDTO draftClaim = claimService.createDraftClaim(request);
@@ -52,7 +50,7 @@ public class FnolProcessServiceImpl implements FnolProcessService {
         assignmentRequest.setUserId(userId);
         claimService.assignClaim(assignmentRequest);
 
-        return claimMapper.mapToClaimResponse(claimService.getClaimById(draftClaim.getClaimId()));
+        return claimService.getClaimDetailsById(draftClaim.getClaimId());
     }
 
     private String selectRandomUserId(GWClaimAdjustorUsersResponse usersResponse) {
